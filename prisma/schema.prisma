@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // provider = "postgresql"
+  // url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  // directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id_User            String     @id @default(cuid())
+  full_name          String
+  image              String?
+  email              String
+  role               Role
+  status             status?    @default(active)
+  default_Adress_lat Float?
+  default_Adress_lng Float?
+  createdAt          DateTime   @default(now())
+  default_time       String?
+  booking            Booking[]
+  reports            Report[]   @relation("Reporter")
+  receivedReports    Report[]   @relation("ReportedUser")
+  sessions           Session[]
+  bus                Bus?
+  busId              Int?
+  providers          Provider[]
+  report_number      Int         @default(0)
+  issues             Issue[]    @relation("DriverIssues")
+  banns Bann[]
+}
+
+model Provider {
+  userId      String
+  provider_Id String @id
+  username    String
+  user        User   @relation(references: [id_User], fields: [userId], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(references: [id_User], fields: [userId], onDelete: Cascade)
+}
+
+model Booking {
+  id_Booking    Int            @id @default(autoincrement())
+  user_id       String
+  depart_Time   String
+  depart_Date   String
+  Adress_lnt    Float?
+  Adress_lng    Float?
+  bookedAt      DateTime?
+  bus_id        Int
+  bus           Bus            @relation(fields: [bus_id], references: [id_Bus])
+  user          User           @relation(fields: [user_id], references: [id_User])
+  bookingStatus BookingStatus?
+}
+
+model Bus {
+  id_Bus       Int       @id @default(autoincrement())
+  image        String
+  bus_Number   Int
+  bus_Name     String
+  id_Driver    String    @unique
+  bus_Capacity Int
+  bus_Status   status
+  user         User      @relation(fields: [id_Driver], references: [id_User])
+  booking      Booking[]
+  duities      Duty[]
+  issues       Issue[]   @relation("BusIssues")
+}
+
+model TravelTimes {
+  id   Int    @id @default(autoincrement())
+  time String
+}
+
+model Duty {
+  id_Duty     Int         @id @default(autoincrement())
+  duty_Time   String
+  duty_Date   String
+  duty_Status DutyStatus?
+  bus_id      Int
+  bus         Bus         @relation(fields: [bus_id], references: [id_Bus])
+}
+
+enum status {
+  inactive
+  active
+}
+
+enum Role {
+  staff
+  student
+  driver
+}
+
+enum BookingStatus {
+  Pending
+  Completed
+  Checked
+  Missed
+}
+
+enum DutyStatus {
+  Pending
+  Scanning
+  Driving
+  Completed
+}
+
+model Report {
+  id             Int      @id @default(autoincrement())
+  reporterId     String
+  reportedUserId String
+  reason         String
+  comment        String?
+  createdAt      DateTime @default(now())
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id_User])
+  reportedUser   User     @relation("ReportedUser", fields: [reportedUserId], references: [id_User])
+  busId          Int?
+  bans1          Bann[]   @relation("ReportCause1")
+  bans2          Bann[]   @relation("ReportCause2")
+  bans3          Bann[]   @relation("ReportCause3")
+}
+model Bann {
+   id_bann             Int      @id @default(autoincrement())
+   id_Banned_User       String
+   user           User      @relation(fields: [id_Banned_User], references: [id_User])
+  report1             Report?  @relation("ReportCause1", fields: [id_report_cause1], references: [id])
+  report2             Report?  @relation("ReportCause2", fields: [id_report_cause2], references: [id])
+  report3             Report?  @relation("ReportCause3", fields: [id_report_cause3], references: [id])
+   bann_at        DateTime @default(now())
+   end_bann_at DateTime?
+   bann_cause_staff String 
+   id_report_cause1 Int 
+   id_report_cause2 Int
+   id_report_cause3 Int
+   
+}
+model Issue {
+  id_issue    Int       @id @default(autoincrement())
+  driver_id   String
+  issueType   IssueType
+  bus_id      Int
+  reported_at DateTime  @default(now())
+  driver      User      @relation("DriverIssues", fields: [driver_id], references: [id_User])
+  bus         Bus       @relation("BusIssues", fields: [bus_id], references: [id_Bus])
+  status      status
+}
+
+enum IssueType {
+  accident
+  breakdown
+}
+ 
